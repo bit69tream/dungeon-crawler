@@ -35,6 +35,11 @@ class Entity:
         self.health: int = health
 
 
+class Enemy(Entity):
+    def __init__(self, position: Position, health: int) -> None:
+        super().__init__(position, health)
+
+
 class Player(Entity):
     def __init__(self, position: Position, health: int) -> None:
         super().__init__(position, health)
@@ -45,17 +50,17 @@ class Chest(Entity):
         super().__init__(position, health)
 
 
-class Door(Entity):
+class Rat(Enemy):
     def __init__(self, position: Position, health: int) -> None:
         super().__init__(position, health)
 
 
-class Zombie(Entity):
+class Zombie(Enemy):
     def __init__(self, position: Position, health: int) -> None:
         super().__init__(position, health)
 
 
-class Kobold(Entity):
+class Kobold(Enemy):
     def __init__(self, position: Position, health: int) -> None:
         super().__init__(position, health)
 
@@ -78,6 +83,13 @@ TILE_GLYPHS = {
     "zombie": "z",
     "kobold": "k",
 }
+NON_PLAYABLE_ENTITIES = {
+    "chest": Chest,
+    "rat": Rat,
+    "zombie": Zombie,
+    "kobold": Kobold,
+}
+
 DIRECTIONS = {
     "right": Vec2(1, 0),
     "left": Vec2(-1, 0),
