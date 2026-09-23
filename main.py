@@ -1,19 +1,32 @@
 from dataclasses import dataclass
-from enum import Enum
 from random import choice, randint
-
-
-class Direction(Enum):
-    RIGHT = (1, 0)
-    LEFT = (-1, 0)
-    UP = (0, -1)
-    DOWN = (0, 1)
+from typing import Self
 
 
 @dataclass
-class Position:
+class Vec2:
     x: int
     y: int
+
+    def __add__(self, other: "Vec2") -> Self:
+        return type(self)(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other: "Vec2") -> Self:
+        return type(self)(self.x - other.x, self.y - other.y)
+
+    def __mul__(self, scalar: int) -> Self:
+        return type(self)(self.x * scalar, self.y * scalar)
+
+    def __rmul__(self, scalar: int) -> Self:
+        return self * scalar
+
+    def __neg__(self) -> Self:
+        return type(self)(-self.x, -self.y)
+
+
+@dataclass
+class Position(Vec2):
+    pass
 
 
 class Entity:
@@ -65,13 +78,19 @@ TILE_GLYPHS = {
     "zombie": "z",
     "kobold": "k",
 }
-
+DIRECTIONS = {
+    "right": Vec2(1, 0),
+    "left": Vec2(-1, 0),
+    "up": Vec2(0, -1),
+    "down": Vec2(0, 1),
+}
+possible_entity_locations: list[Position] = []
 
 map = [[TILE_GLYPHS["empty"] for _ in range(MAP_WIDTH)] for _ in range(MAP_HEIGHT)]
 
 
 def map_fill_ratio():
-    amount_of_ground = sum([l.count(TILE_GLYPHS["ground"]) for l in map])
+    amount_of_ground = sum([row.count(TILE_GLYPHS["ground"]) for row in map])
     if amount_of_ground == 0:
         return 0
     return amount_of_ground / (MAP_WIDTH * MAP_HEIGHT)
@@ -87,7 +106,7 @@ def is_position_valid(pos: Position) -> bool:
 
 def random_position_on_ground() -> Position:
     positions = [
-        (x, y)
+        Vec2(x, y)
         for y, l in enumerate(map)
         for x, c in enumerate(l)
         if c == TILE_GLYPHS["ground"]
@@ -96,41 +115,47 @@ def random_position_on_ground() -> Position:
         try:
             pos = choice(positions)
             neighbours = [
-                map[pos[1] + dir.value[1]][pos[0] + dir.value[0]] for dir in Direction
+                map[pos.y + dir.y][pos.x + dir.x] for _, dir in DIRECTIONS.items()
             ]
             if len(set(neighbours)) > 1:
-                return Position(pos[0], pos[1])
+                return Position(pos.x, pos.y)
         except IndexError:
             pass
 
 
 def drunk_walk(start: Position):
     depth = 0
-    current_pos = start
+    current_pos: Position = start
     while depth < DRUNK_WALK_DEPTH_LIMIT:
-        direction = choice(list(Direction)).value
-        current_pos.x += direction[0]
-        current_pos.y += direction[1]
+        directions = [v for _, v in DIRECTIONS.items()]
+        picked_a_future = False
 
-        if not is_position_valid(current_pos):
-            break
+        while len(directions) > 0:
+            dir = choice(directions)
+            if is_position_valid(current_pos + dir):
+                picked_a_future = True
+                current_pos += dir
+                break
+
+        if not picked_a_future:
+            return
 
         map[current_pos.y][current_pos.x] = TILE_GLYPHS["ground"]
         depth += 1
 
+    possible_entity_locations.append(current_pos)
+
 
 def place_walls():
-    directions = [x.value for x in Direction]
     for y in range(MAP_HEIGHT):
         for x in range(MAP_WIDTH):
             if map[y][x] != TILE_GLYPHS["empty"]:
                 continue
-            for d in directions:
-                xd = x + d[0]
-                yd = y + d[1]
+            for d in DIRECTIONS.values():
+                pos = Position(x + d.x, y + d.y)
                 if (
-                    is_position_valid(Position(xd, yd))
-                    and map[yd][xd] == TILE_GLYPHS["ground"]
+                    is_position_valid(pos)
+                    and map[pos.y][pos.x] == TILE_GLYPHS["ground"]
                 ):
                     map[y][x] = TILE_GLYPHS["wall"]
 
