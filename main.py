@@ -50,6 +50,10 @@ DIRECTIONS = {
     "down": Vec2(0, 1),
 }
 
+INITIAL_HEALTH_VALUES = {
+    "player": 100,
+}
+
 
 class Entity:
     def __init__(self, position: Position, health: int) -> None:
@@ -88,10 +92,10 @@ class Kobold(Enemy):
 
 
 NON_PLAYABLE_ENTITIES = {
-    "chest": Chest,
-    "rat": Rat,
-    "zombie": Zombie,
-    "kobold": Kobold,
+    "chest": (Chest, 1),
+    "rat": (Rat, 5),
+    "zombie": (Zombie, 20),
+    "kobold": (Kobold, 25),
 }
 
 
@@ -101,6 +105,7 @@ class Dungeon:
             [TILE_GLYPHS["empty"] for _ in range(map_width)] for _ in range(map_height)
         ]
         self._entities: list[Entity] = []
+        self._player: Player
         self.map_width: int = map_width
         self.map_height: int = map_height
         self._possible_entity_locations: list[Position] = []
@@ -186,7 +191,26 @@ class Dungeon:
                 self.map[y][-1] = TILE_GLYPHS["wall"]
 
     def _place_entities(self):
-        pass
+        possible_entity_locations = [
+            p
+            for p in self._possible_entity_locations
+            if self.map[p.y][p.x] == TILE_GLYPHS["ground"]
+        ]
+        if len(possible_entity_locations) == 0:
+            raise RuntimeError("BUG!")
+
+        self._player = Player(
+            possible_entity_locations[0], INITIAL_HEALTH_VALUES["player"]
+        )
+        possible_entity_locations = possible_entity_locations[1:]
+
+        entity_types = list(NON_PLAYABLE_ENTITIES.keys())
+        for p in possible_entity_locations:
+            entity_type = choice(entity_types)
+            entity = NON_PLAYABLE_ENTITIES[entity_type]
+            self._entities.append(entity[0](p, entity[1]))
+
+        self._possible_entity_locations.clear()
 
     def generate_map(self):
         generated_percent = 0
@@ -210,6 +234,7 @@ class Dungeon:
 def main():
     dungeon = Dungeon(MAP_WIDTH, MAP_HEIGHT)
     dungeon.print_map()
+    print(dungeon._entities)
 
 
 if __name__ == "__main__":
