@@ -4,6 +4,7 @@ A simple text-based dungeon crawler game I'm making for the python class I'm tea
 
 ![Example map generation](./example_map.png)
 
+---
 
 ### What's changed?
 * Refactoring all structure project
