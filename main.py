@@ -1,6 +1,6 @@
+import colorama
 from src.config import *
 from src.map import *
-import colorama
 
 colorama.just_fix_windows_console()
 
